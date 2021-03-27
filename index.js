@@ -1,91 +1,134 @@
 /**
  * 
- * Instructions:
- * - Install node version 11+;
- * - Create a folder like ./inputData;
- * - Drop into created folder jsons, that you need to compare;
- * - Run 'node index.js' to get a result;
+ * Files storage
  * 
 */
+let filesData = {};
 
-/**
- * 
- * Nodejs imports
- * 
-*/
-const fs = require('fs');
-
-
-/**
- * 
- * Input data
- * 
-*/
-const folderPath = './inputData/';
-
-
-/**
- * 
- * Functions and stuff
- * 
-*/
-const getGroppedJsonsByFileName = (folderPath) => {
-  const groppedJsonsByFileName = {};
-
-  fs.readdirSync(folderPath).forEach(fileName => {
-    groppedJsonsByFileName[fileName] = JSON.parse(fs.readFileSync(folderPath + fileName));
-  });
-
-  return groppedJsonsByFileName;
+const setFilesData = (key, value) => {
+  filesData = {
+    ...filesData,
+    [key]: value,
+  };
 };
 
-const getGroppedJsonKeysByFileName = (groppedJsonsByFileName) => {
-  const fileNames = Object.keys(groppedJsonsByFileName);
-  const groppedJsonKeysByFileName = {};
-
-  fileNames.forEach(fileName => 
-    groppedJsonKeysByFileName[fileName] = getDeepObjectKeys(groppedJsonsByFileName[fileName])
-  );
-  
-  return groppedJsonKeysByFileName;
+const resetFilesData = () => {
+  filesData = {};
 };
 
-const getDeepObjectKeys = (obj) => {
+
+/**
+ * 
+ * Get stringified json keys 
+ * 
+ * @params obj
+ * 
+ * @return {[string]}
+ * 
+*/
+const getObjectKeys = (obj) => {
   return Object.keys(obj)
     .map((key) =>
       typeof obj[key] === 'object'
-        ? getDeepObjectKeys(obj[key]).map(i => `${key}.${i}`)
+        ? getObjectKeys(obj[key]).map(i => `${key}.${i}`)
         : key
     ).flat();
 };
 
-const getUncomparedTranslationsByKeys = (groppedJsonsByFilename) => {
-  const uncomparedTranslationsByKeys = {};
 
-  const fileNames = Object.keys(groppedJsonsByFilename);
+/**
+ * 
+ * Get all json keys grouped by filename 
+ * 
+ * @params groppedJsonsByFileName
+ * 
+ * @return {[filename]: [jsonKey]}
+ * 
+*/
+const getGroppedJsonKeysByFileName = (groppedJsonsByFileName) => {
+  const fileNames = Object.keys(groppedJsonsByFileName);
+  const groppedJsonKeysByFileName = {};
+
+  fileNames.forEach(fileName =>
+    groppedJsonKeysByFileName[fileName] = getObjectKeys(groppedJsonsByFileName[fileName])
+  );
+
+  return groppedJsonKeysByFileName;
+};
+
+
+/**
+ * 
+ * Get uncompared keys
+ * 
+ * @params groppedJsonsByFilename
+ * 
+ * @return {[key]: [filenames that are not compared]}
+ * 
+*/
+const getUncomparedFilesByKeys = (groppedJsonsByFilename) => {
+  const uncomparedFilesByKeys = {};
 
   const groppedJsonKeysByFilename = getGroppedJsonKeysByFileName(groppedJsonsByFilename);
   const allJsonsKeyList = Object.values(groppedJsonKeysByFilename)
     .flat()
     .filter((value, index, array) => array.indexOf(value) === index);
 
+  const fileNames = Object.keys(groppedJsonsByFilename);
   allJsonsKeyList.forEach((key) => {
-    const uncomparedTranslationsList = fileNames
+    const uncomparedFilesList = fileNames
       .map(fileName => groppedJsonKeysByFilename[fileName].indexOf(key) === -1 ? fileName : undefined)
       .filter(i => i);
-    
-    if (uncomparedTranslationsList.length > 0) {
-      uncomparedTranslationsByKeys[key] = uncomparedTranslationsList;
+
+    if (uncomparedFilesList.length > 0) {
+      uncomparedFilesByKeys[key] = uncomparedFilesList;
     }
   });
 
-  return uncomparedTranslationsByKeys;
+  return uncomparedFilesByKeys;
 }
 
 
 /**
  * 
- * Init
+ * Reading files and store them into filesData
  * 
 */
-console.log(getUncomparedTranslationsByKeys(getGroppedJsonsByFileName(folderPath)));
+const readFile = (file) => {
+  const reader = new FileReader();
+  reader.onload = (e) => setFilesData(file.name, JSON.parse(e.target.result));
+  reader.readAsText(file);
+}
+
+const readFiles = (files) => {
+  for (let i = 0; i < files.length; i++) {
+    readFile(files[i]);
+  }
+}
+
+
+/**
+ * 
+ * Input file change handler
+ * 
+ */
+const onChange = async event => {
+  resetFilesData();
+  readFiles(event.target.files);
+
+  const resultHtml = document.getElementById('result');
+  const fileUploadHtml = document.getElementsByClassName('files-upload')[0];
+
+  fileUploadHtml.className += ' is-active';
+
+  // compare and return uncompared data
+  setTimeout(() => {
+    const uncomparedFilesByKeys = getUncomparedFilesByKeys(filesData);
+
+    resultHtml.className += ' is-visible';
+    resultHtml.textContent = JSON.stringify(uncomparedFilesByKeys, " ", 2);
+  }, 500);
+}
+
+
+document.getElementById('files').addEventListener('change', onChange);
