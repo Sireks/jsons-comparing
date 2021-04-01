@@ -1,7 +1,19 @@
-const ImportJsons = ({ addJson }) => {
+const ImportJsons = ({ dispatchJsons }) => {
   const readFile = (file) => {
     const reader = new FileReader();
-    reader.onload = (e) => addJson({ name: file.name, value: JSON.stringify(e.target.result, '', 0) });
+    
+    reader.onload = (e) => {
+      dispatchJsons({
+        type: 'add',
+        payload: {
+          json: {
+            name: file.name,
+            value: e.target.result,
+          },
+        },
+      });
+    };
+
     reader.readAsText(file);
   };
   

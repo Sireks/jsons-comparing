@@ -1,13 +1,15 @@
 import CompareInput from 'components/CompareInput';
-// import CompareActions from 'components/CompareActions';
-// import CompareOutput from 'components/CompareOutput';
+import CompareOutput from 'components/CompareOutput';
+
+import useJsons from 'hooks/useJsons';
 
 function App() {
+  const [ jsons, dispatchJsons ] = useJsons();
+
   return (
     <div className="App">
-      <CompareInput />
-      {/* <CompareActions /> */}
-      {/* <CompareOutput /> */}
+      <CompareInput jsons={jsons} dispatchJsons={dispatchJsons} />
+      <CompareOutput jsons={jsons} />
     </div>
   );
 }
