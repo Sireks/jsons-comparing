@@ -3,8 +3,10 @@ import CompareInput from 'components/CompareInput';
 import CompareOutput from 'components/CompareOutput';
 import JsonDataCompareButton from 'components/JsonDataCompareButton';
 
+import { initialJsonsData } from './temp';
+
 function App() {
-  const [ jsonsData, setJsonsData ] = useState([]);
+  const [ jsonsData, setJsonsData ] = useState(initialJsonsData);
   const [ comparedData, setComparedData ] = useState();
 
   const handleReset = () => {
